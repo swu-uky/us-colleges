@@ -4,7 +4,7 @@
 
     Data obtained from *Homeland Infrastructure Foundation-Level Data* at:
 
-    https://hifld-geoplatform.opendata.arcgis.com/datasets/colleges-and-universities?geometry=-129.088%2C26.603%2C-62.335%2C39.448.
+    https://hifld-geoplatform.opendata.arcgis.com/datasets/colleges-and-universities?geometry=-129.088%2C26.603%2C-62.335%2C39.448
 
 ## Process
 
