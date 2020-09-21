@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>Colleges in the US</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.css"
+        type="text/css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #menu {
+            position: absolute;
+            padding: 5px;
+            font-family: sans-serif;
+            border: 2px solid black;
+            font-size: 14px;
+            color: #222;
+            background-color: #fff;
+            border-radius: 2px;
+        }
+
+        .schoolInfo {
+            position: absolute;
+            font-family: sans-serif;
+            top: 50%;
+            margin-left: 5px;
+            padding: 5px;
+            width: 10%;
+            border: 2px solid black;
+            font-size: 14px;
+            color: #222;
+            background-color: #fff;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id='map'></div>
+
+    <div id="menu">
+        <label><strong>Switch Styles</strong></label><br>
+        <input id="outdoors-v11" type="radio" name="rtoggle" value="outdoors" checked="checked" />
+        <label for="outdoors-v11"><strong>Outdoors</strong></label>
+        <input id="streets-v11" type="radio" name="rtoggle" value="streets" />
+        <label for="streets-v11"><strong>Streets</strong></label>
+        <input id="light-v10" type="radio" name="rtoggle" value="light" />
+        <label for="light-v10"><strong>Light</strong></label>
+        <input id="dark-v10" type="radio" name="rtoggle" value="dark" />
+        <label for="dark-v10"><Strong>Dark</Strong></label>
+        <input id="satellite-v9" type="radio" name="rtoggle" value="satellite" />
+        <label for="satellite-v9"><strong>Satellite</strong></label>
+    </div>
+
+    <div class='schoolInfo'>
+        <div><strong>Name:</strong> <span id='name'></span></div>
+        <div><strong>Location:</strong> <span id='location'></span></div>
+        <div><strong>Total Enrollment:</strong> <span id='enrollment'></span></div>
+    </div>
+
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+
+    <script>
+        mapboxgl.accessToken =
+            'pk.eyJ1IjoibWVhZG93b2ZoYXkiLCJhIjoiY2swY3JoNDlmMDBjNzNicWVhNGM5aHFmaiJ9._nvQjnpu5KGnViUWQwCMUg';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/outdoors-v11',
+            center: [-98.5795, 39.8283],
+            zoom: 3.8
+        });
+
+        map.addControl(
+            new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                mapboxgl: mapboxgl
+            })
+        );
+
+        var layerList = document.getElementById('menu');
+        var inputs = layerList.getElementsByTagName('input');
+
+        var nameDisplay = document.getElementById('name');
+        var locationDisplay = document.getElementById('location');
+        var enrollmentDisplay = document.getElementById('enrollment');
+
+        function switchLayer(layer) {
+            var layerId = layer.target.id;
+            map.setStyle('mapbox://styles/mapbox/' + layerId);
+            d3.json('./data/colleges.json').then((geojson) => {
+                // when loaded
+                addLayer(geojson);
+            });
+        }
+
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].onclick = switchLayer;
+        }
+
+        map.on('load', () => {
+            // request our GEOJSON data
+            d3.json('./data/colleges.json').then((geojson) => {
+                // when loaded
+                addLayer(geojson);
+            });
+        });
+
+        function addLayer(geojson) {
+            map.addSource('colleges-data', {
+                type: 'geojson',
+                data: geojson // use our data as the data source
+            });
+
+            map.addLayer({
+                'id': 'colleges-viz',
+                'type': 'circle',
+                'source': 'colleges-data',
+                'paint': {
+                    'circle-stroke-color': '#ffffff',
+                    'circle-stroke-width': 1,
+                    'circle-color': '#000000'
+                }
+            });
+        }
+
+        map.on('mousemove', 'colleges-viz', (e) => {
+
+            map.getCanvas().style.cursor = 'pointer';
+            // Set variables equal to the current feature's magnitude, location, and time
+            var schoolName = e.features[0].properties.NAME;
+            var schoolLocation = e.features[0].properties.CITY + ', ' + e.features[0].properties.STATE;
+            var schoolEnrollment = e.features[0].properties.TOT_ENROLL;
+
+            // Check whether features exist
+            if (e.features.length > 0) {
+                // Display the magnitude, location, and time in the sidebar
+                nameDisplay.textContent = schoolName;
+                locationDisplay.textContent = schoolLocation;
+                enrollmentDisplay.textContent = schoolEnrollment;
+            }
+        });
+
+        map.on('click', 'colleges-viz', function (e) {
+            map.flyTo({
+                center: e.features[0].geometry.coordinates,
+                zoom: 13.8
+            });
+        })
+    </script>
+
+</body>
+
+</html>
